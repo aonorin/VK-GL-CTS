@@ -24,10 +24,10 @@ import os
 import sys
 import shutil
 import tarfile
-import urllib2
 import hashlib
 import argparse
 import subprocess
+import ssl
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
@@ -94,12 +94,30 @@ class SourcePackage (Source):
 			return None
 
 	def storeExtractedChecksum (self, checksum):
-		writeFile(self.getExtractedChecksumFilePath(), checksum)
+		checksum_bytes = checksum.encode("utf-8")
+		writeFile(self.getExtractedChecksumFilePath(), checksum_bytes)
+
+	def connectToUrl (self, url):
+		result = None
+
+		if sys.version_info < (3, 0):
+			from urllib2 import urlopen
+		else:
+			from urllib.request import urlopen
+
+		if args.insecure:
+			print("Ignoring certificate checks")
+			ssl_context = ssl._create_unverified_context()
+			result = urlopen(url, context=ssl_context)
+		else:
+			result = urlopen(url)
+
+		return result
 
 	def fetchAndVerifyArchive (self):
-		print "Fetching %s" % self.url
+		print("Fetching %s" % self.url)
 
-		req			= urllib2.urlopen(self.url)
+		req			= self.connectToUrl(self.url)
 		data		= req.read()
 		checksum	= computeChecksum(data)
 		dstPath		= os.path.join(EXTERNAL_DIR, self.baseDir, self.archiveDir, self.filename)
@@ -113,7 +131,7 @@ class SourcePackage (Source):
 		writeFile(dstPath, data)
 
 	def extract (self):
-		print "Extracting %s to %s/%s" % (self.filename, self.baseDir, self.extractDir)
+		print("Extracting %s to %s/%s" % (self.filename, self.baseDir, self.extractDir))
 
 		srcPath	= os.path.join(EXTERNAL_DIR, self.baseDir, self.archiveDir, self.filename)
 		tmpPath	= os.path.join(EXTERNAL_DIR, ".extract-tmp-%s" % self.baseDir)
@@ -155,21 +173,29 @@ class GitRepo (Source):
 		self.sshUrl		= sshUrl
 		self.revision	= revision
 
-	def selectUrl(self, cmdProtocol = None):
-		if cmdProtocol == None:
-			# reuse parent repo protocol
-			proc = subprocess.Popen(['git', 'ls-remote', '--get-url', 'origin'], stdout=subprocess.PIPE)
-			(stdout, stderr) = proc.communicate()
+	def detectProtocol(self, cmdProtocol = None):
+		# reuse parent repo protocol
+		proc = subprocess.Popen(['git', 'ls-remote', '--get-url', 'origin'], stdout=subprocess.PIPE)
+		(stdout, stderr) = proc.communicate()
 
-			if proc.returncode != 0:
-				raise Exception("Failed to execute 'git ls-remote origin', got %d" % proc.returncode)
-			if (stdout[:3] == 'ssh') or (stdout[:3] == 'git'):
-				protocol = 'ssh'
-			else:
-				assert stdout[:5] == 'https'
-				protocol = 'https'
+		if proc.returncode != 0:
+			raise Exception("Failed to execute 'git ls-remote origin', got %d" % proc.returncode)
+		if (stdout[:3] == 'ssh') or (stdout[:3] == 'git'):
+			protocol = 'ssh'
 		else:
-			protocol = cmdProtocol
+			# remote 'origin' doesn't exist, assume 'https' as checkout protocol
+			protocol = 'https'
+		return protocol
+
+	def selectUrl(self, cmdProtocol = None):
+		try:
+			if cmdProtocol == None:
+				protocol = self.detectProtocol(cmdProtocol)
+			else:
+				protocol = cmdProtocol
+		except:
+			# fallback to https on any issues
+			protocol = 'https'
 
 		if protocol == 'ssh':
 			if self.sshUrl != None:
@@ -217,12 +243,12 @@ PACKAGES = [
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Tools.git",
 		None,
-		"5c19de25107d496a15c7869b3e1dab0a0f85913d",
+		"ab03b879cab5d09147c257035145f0ad36c45064",
 		"spirv-tools"),
 	GitRepo(
 		"https://github.com/KhronosGroup/glslang.git",
 		None,
-		"e3aa654c4b0c761b28d7864192ca8ceea6faf70a",
+		"36852b838d05b2a1d5a0dd311b86c4971656fe36",
 		"glslang"),
 	GitRepo(
 		"https://github.com/KhronosGroup/SPIRV-Headers.git",
@@ -232,12 +258,29 @@ PACKAGES = [
 ]
 
 def parseArgs ():
+	versionsForInsecure = ((2,7,9), (3,4,3))
+	versionsForInsecureStr = ' or '.join(('.'.join(str(x) for x in v)) for v in versionsForInsecure)
+
 	parser = argparse.ArgumentParser(description = "Fetch external sources")
 	parser.add_argument('--clean', dest='clean', action='store_true', default=False,
 						help='Remove sources instead of fetching')
+	parser.add_argument('--insecure', dest='insecure', action='store_true', default=False,
+						help="Disable certificate check for external sources."
+						" Minimum python version required " + versionsForInsecureStr)
 	parser.add_argument('--protocol', dest='protocol', default=None, choices=['ssh', 'https'],
 						help="Select protocol to checkout git repositories.")
-	return parser.parse_args()
+
+	args = parser.parse_args()
+
+	if args.insecure:
+		for versionItem in versionsForInsecure:
+			if (sys.version_info.major == versionItem[0]):
+				if sys.version_info < versionItem:
+					parser.error("For --insecure minimum required python version is " +
+								versionsForInsecureStr)
+				break;
+
+	return args
 
 if __name__ == "__main__":
 	args = parseArgs()

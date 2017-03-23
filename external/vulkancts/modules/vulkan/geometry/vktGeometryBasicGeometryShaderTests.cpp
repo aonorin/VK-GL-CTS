@@ -124,14 +124,7 @@ void uploadImage (Context&								context,
 
 	// Create command pool and buffer
 	{
-		const VkCommandPoolCreateInfo cmdPoolParams =
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType			sType;
-			DE_NULL,										// const void*				pNext;
-			VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// VkCommandPoolCreateFlags	flags;
-			queueFamilyIndex,								// deUint32					queueFamilyIndex;
-		};
-		cmdPool = createCommandPool(vk, device, &cmdPoolParams);
+		cmdPool = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
 		const VkCommandBufferAllocateInfo cmdBufferAllocateInfo =
 		{
@@ -145,16 +138,7 @@ void uploadImage (Context&								context,
 	}
 
 	// Create fence
-	{
-		const VkFenceCreateInfo fenceParams =
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,								// const void*			pNext;
-			0u										// VkFenceCreateFlags	flags;
-		};
-
-		fence = createFence(vk, device, &fenceParams);
-	}
+	fence = createFence(vk, device);
 
 	// Barriers for copying buffer to image
 	const VkBufferMemoryBarrier preBufferBarrier =
@@ -742,7 +726,7 @@ void GeometryOutputCountTest::initPrograms (SourceCollections& sourceCollections
 		std::ostringstream src;
 		src	<< "#version 310 es\n"
 			<<"layout(location = 0) out mediump vec4 fragColor;\n"
-			<<"layout(location = 0) in mediump vec4 v_frag_FragColor;\n"
+			<<"layout(location = 0) in highp vec4 v_frag_FragColor;\n"
 			<<"void main (void)\n"
 			<<"{\n"
 			<<"	fragColor = v_frag_FragColor;\n"
@@ -930,7 +914,7 @@ void VaryingOutputCountCase::initPrograms (SourceCollections& sourceCollections)
 		std::ostringstream src;
 		src	<< "#version 310 es\n"
 			<< "layout(location = 0) out mediump vec4 fragColor;\n"
-			<< "layout(location = 0) in mediump vec4 v_frag_FragColor;\n"
+			<< "layout(location = 0) in highp vec4 v_frag_FragColor;\n"
 			<< "void main (void)\n"
 			<< "{\n"
 			<< "	fragColor = v_frag_FragColor;\n"

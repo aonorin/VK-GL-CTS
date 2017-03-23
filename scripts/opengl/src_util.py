@@ -4,7 +4,7 @@
 # drawElements Quality Program utilities
 # --------------------------------------
 #
-# Copyright 2015 The Android Open Source Project
+# Copyright 2015-2017 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,9 +36,10 @@ EGL_DIR				= os.path.normpath(os.path.join(SCRIPTS_DIR, "..", "..", "framework",
 OPENGL_INC_DIR		= os.path.join(OPENGL_DIR, "wrapper")
 
 GL_SOURCE			= khr_util.registry_cache.RegistrySource(
-						"gl.xml",
-						33312,
-						"eb3225a3b7b25ab8f875145a4e226f0ccca4ac2e7468053bcbca740354f37258")
+						"https://raw.githubusercontent.com/KhronosGroup/OpenGL-Registry",
+						"xml/gl.xml",
+						"db2965fc26513b254e2f964171f79e416a05fe29",
+						"c4a4e241dc63ed3d1c4cd50451e5baef330dbb51dd3ecb278be80a5779f5b348")
 
 EXTENSIONS			= [
 	'GL_KHR_texture_compression_astc_ldr',
@@ -50,6 +51,7 @@ EXTENSIONS			= [
 	'GL_EXT_geometry_point_size',
 	'GL_EXT_tessellation_shader',
 	'GL_EXT_geometry_shader',
+	'GL_EXT_robustness',
 	'GL_EXT_texture_buffer',
 	'GL_EXT_texture_cube_map_array',
 	'GL_EXT_texture_snorm',
@@ -58,6 +60,7 @@ EXTENSIONS			= [
 	'GL_EXT_texture_type_2_10_10_10_REV',
 	'GL_EXT_copy_image',
 	'GL_EXT_depth_bounds_test',
+	'GL_EXT_direct_state_access',
 	'GL_EXT_draw_buffers_indexed',
 	'GL_EXT_draw_elements_base_vertex',
 	'GL_EXT_direct_state_access',
@@ -108,6 +111,7 @@ EXTENSIONS			= [
 	'GL_ARB_texture_view',
 	'GL_ARB_transform_feedback2',
 	'GL_ARB_transform_feedback3',
+	'GL_ARB_transform_feedback_instanced',
 	'GL_ARB_transform_feedback_overflow_query',
 	'GL_ARB_vertex_array_bgra',
 	'GL_ARB_vertex_attrib_64bit',

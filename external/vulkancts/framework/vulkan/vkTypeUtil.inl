@@ -457,3 +457,41 @@ inline VkObjectTablePushConstantEntryNVX makeObjectTablePushConstantEntryNVX (Vk
 	res.stageFlags		= stageFlags;
 	return res;
 }
+
+inline VkDescriptorUpdateTemplateEntryKHR makeDescriptorUpdateTemplateEntryKHR (deUint32 dstBinding, deUint32 dstArrayElement, deUint32 descriptorCount, VkDescriptorType descriptorType, deUintptr offset, deUintptr stride)
+{
+	VkDescriptorUpdateTemplateEntryKHR res;
+	res.dstBinding		= dstBinding;
+	res.dstArrayElement	= dstArrayElement;
+	res.descriptorCount	= descriptorCount;
+	res.descriptorType	= descriptorType;
+	res.offset			= offset;
+	res.stride			= stride;
+	return res;
+}
+
+inline VkRefreshCycleDurationGOOGLE makeRefreshCycleDurationGOOGLE (deUint64 refreshDuration)
+{
+	VkRefreshCycleDurationGOOGLE res;
+	res.refreshDuration	= refreshDuration;
+	return res;
+}
+
+inline VkPastPresentationTimingGOOGLE makePastPresentationTimingGOOGLE (deUint32 presentID, deUint64 desiredPresentTime, deUint64 actualPresentTime, deUint64 earliestPresentTime, deUint64 presentMargin)
+{
+	VkPastPresentationTimingGOOGLE res;
+	res.presentID			= presentID;
+	res.desiredPresentTime	= desiredPresentTime;
+	res.actualPresentTime	= actualPresentTime;
+	res.earliestPresentTime	= earliestPresentTime;
+	res.presentMargin		= presentMargin;
+	return res;
+}
+
+inline VkPresentTimeGOOGLE makePresentTimeGOOGLE (deUint32 presentID, deUint64 desiredPresentTime)
+{
+	VkPresentTimeGOOGLE res;
+	res.presentID			= presentID;
+	res.desiredPresentTime	= desiredPresentTime;
+	return res;
+}

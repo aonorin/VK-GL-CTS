@@ -314,7 +314,7 @@ void TextureBinding::updateTextureData (const TestTextureSp& textureData, const 
 	const VkImageType							imageType				= imageViewTypeToImageType(imageViewType);
 	const VkImageTiling							imageTiling				= VK_IMAGE_TILING_OPTIMAL;
 	const VkImageUsageFlags						imageUsageFlags			= VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-	const VkFormat								format					= mapTextureFormat(textureData->getTextureFormat());
+	const VkFormat								format					= textureData->isCompressed() ? mapCompressedTextureFormat(textureData->getCompressedLevel(0, 0).getFormat()) : mapTextureFormat(textureData->getTextureFormat());
 	const tcu::UVec3							textureDimension		= textureData->getTextureDimension();
 	const deUint32								mipLevels				= textureData->getNumLevels();
 	const deUint32								arraySize				= textureData->getArraySize();
@@ -379,7 +379,7 @@ void TextureBinding::updateTextureViewMipLevels (deUint32 baseLevel, deUint32 ma
 	const DeviceInterface&						vkd						= m_context.getDeviceInterface();
 	const VkDevice								vkDevice				= m_context.getDevice();
 	const vk::VkImageViewType					imageViewType			= textureTypeToImageViewType(m_type);
-	const vk::VkFormat							format					= mapTextureFormat(m_textureData->getTextureFormat());
+	const vk::VkFormat							format					= m_textureData->isCompressed() ? mapCompressedTextureFormat(m_textureData->getCompressedLevel(0, 0).getFormat()) : mapTextureFormat(m_textureData->getTextureFormat());
 	const bool									isShadowTexture			= tcu::hasDepthComponent(m_textureData->getTextureFormat().order);
 	const VkImageAspectFlags					aspectMask				= isShadowTexture ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 	const deUint32								layerCount				= m_textureData->getArraySize();
@@ -429,17 +429,7 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 	Allocator&									allocator				= m_context.getDefaultAllocator();
 
 	// Command Pool
-	{
-		const VkCommandPoolCreateInfo			cmdPoolCreateInfo		=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,					// VkStructureType             sType;
-			DE_NULL,													// const void*                 pNext;
-			VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,			// VkCommandPoolCreateFlags    flags;
-			queueFamilyIndex											// deUint32                    queueFamilyIndex;
-		};
-
-		m_commandPool = createCommandPool(vkd, vkDevice, &cmdPoolCreateInfo, DE_NULL);
-	}
+	m_commandPool = createCommandPool(vkd, vkDevice, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
 
 	// Image
 	{
@@ -725,16 +715,7 @@ TextureRenderer::TextureRenderer (Context& context, VkSampleCountFlagBits sample
 	}
 
 	// Fence
-	{
-		const VkFenceCreateInfo					fenceParams					=
-		{
-			VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-			DE_NULL,								// const void*			pNext;
-			VK_FENCE_CREATE_SIGNALED_BIT			// VkFenceCreateFlags	flags;
-		};
-
-		m_fence = createFence(vkd, vkDevice, &fenceParams);
-	}
+	m_fence = createFence(vkd, vkDevice);
 
 	// Result Buffer
 	{
@@ -781,16 +762,7 @@ void TextureRenderer::clearImage(VkImage image)
 		1								// deUint32				layerCount;
 	};
 
-	const VkCommandBufferAllocateInfo		cmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				// VkStructureType             sType;
-		DE_NULL,													// const void*                 pNext;
-		*m_commandPool,												// VkCommandPool               commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,							// VkCommandBufferLevel        level;
-		1															// deUint32                    commandBufferCount;
-	};
-
-	commandBuffer = allocateCommandBuffer(vkd, vkDevice, &cmdBufferAllocateInfo);
+	commandBuffer = allocateCommandBuffer(vkd, vkDevice, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	const VkCommandBufferBeginInfo		cmdBufferBeginInfo		=
 	{
@@ -1328,7 +1300,11 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 
 		if (samplerCreateInfo.magFilter == VK_FILTER_LINEAR || samplerCreateInfo.minFilter == VK_FILTER_LINEAR || samplerCreateInfo.mipmapMode == VK_SAMPLER_MIPMAP_MODE_LINEAR)
 		{
-			const VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), mapTextureFormat(m_textureBindings[texUnit]->getTestTexture().getTextureFormat()));
+			const pipeline::TestTexture&	testTexture			= m_textureBindings[texUnit]->getTestTexture();
+			const VkFormat					textureFormat		= testTexture.isCompressed() ? mapCompressedTextureFormat(testTexture.getCompressedLevel(0, 0).getFormat())
+																							 : mapTextureFormat          (testTexture.getTextureFormat());
+			const VkFormatProperties		formatProperties	= getPhysicalDeviceFormatProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), textureFormat);
+
 			if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
 				TCU_THROW(NotSupportedError, "Linear filtering for this image format is not supported");
 		}
@@ -1447,18 +1423,7 @@ void TextureRenderer::renderQuad (tcu::Surface&									result,
 	}
 
 	// Create Command Buffer
-	{
-		const VkCommandBufferAllocateInfo		cmdBufferAllocateInfo	=
-		{
-			VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,				// VkStructureType             sType;
-			DE_NULL,													// const void*                 pNext;
-			*m_commandPool,												// VkCommandPool               commandPool;
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,							// VkCommandBufferLevel        level;
-			1															// deUint32                    commandBufferCount;
-		};
-
-		commandBuffer = allocateCommandBuffer(vkd, vkDevice, &cmdBufferAllocateInfo);
-	}
+	commandBuffer = allocateCommandBuffer(vkd, vkDevice, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	// Begin Command Buffer
 	{

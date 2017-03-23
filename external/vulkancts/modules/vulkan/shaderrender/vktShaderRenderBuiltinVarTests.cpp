@@ -24,11 +24,14 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktShaderRenderBuiltinVarTests.hpp"
+
+#include "vkDefs.hpp"
 #include "vktShaderRender.hpp"
 #include "gluShaderUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuStringTemplate.hpp"
 #include "tcuTextureUtil.hpp"
+#include "vktDrawUtil.hpp"
 
 #include "deMath.h"
 #include "deRandom.hpp"
@@ -41,83 +44,156 @@ using namespace vk;
 
 namespace vkt
 {
+using namespace drawutil;
+
 namespace sr
 {
 
 namespace
 {
 
+enum
+{
+	FRONTFACE_RENDERWIDTH			= 16,
+	FRONTFACE_RENDERHEIGHT			= 16
+};
+
+class FrontFacingVertexShader : public rr::VertexShader
+{
+public:
+	FrontFacingVertexShader (void)
+		: rr::VertexShader(1, 0)
+	{
+		m_inputs[0].type = rr::GENERICVECTYPE_FLOAT;
+	}
+
+	void shadeVertices (const rr::VertexAttrib* inputs, rr::VertexPacket* const* packets, const int numPackets) const
+	{
+		for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
+		{
+			packets[packetNdx]->position = rr::readVertexAttribFloat(inputs[0],
+																	 packets[packetNdx]->instanceNdx,
+																	 packets[packetNdx]->vertexNdx);
+		}
+	}
+};
+
+class FrontFacingFragmentShader : public rr::FragmentShader
+{
+public:
+	FrontFacingFragmentShader (void)
+		: rr::FragmentShader(0, 1)
+	{
+		m_outputs[0].type = rr::GENERICVECTYPE_FLOAT;
+	}
+
+	void shadeFragments (rr::FragmentPacket* , const int numPackets, const rr::FragmentShadingContext& context) const
+	{
+		tcu::Vec4 color;
+		for (int packetNdx = 0; packetNdx < numPackets; ++packetNdx)
+		{
+			for (int fragNdx = 0; fragNdx < rr::NUM_FRAGMENTS_PER_PACKET; ++fragNdx)
+			{
+				if (context.visibleFace == rr::FACETYPE_FRONT)
+					color = tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
+				else
+					color = tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f);
+				rr::writeFragmentOutput(context, packetNdx, fragNdx, 0, color);
+			}
+		}
+	}
+};
+
 class BuiltinGlFrontFacingCaseInstance : public ShaderRenderCaseInstance
 {
 public:
-					BuiltinGlFrontFacingCaseInstance	(Context& context);
+					BuiltinGlFrontFacingCaseInstance	(Context& context, VkPrimitiveTopology topology);
 
 	TestStatus		iterate								(void);
-	virtual void	setupDefaultInputs					(void);
+private:
+	const VkPrimitiveTopology							m_topology;
 };
 
-BuiltinGlFrontFacingCaseInstance::BuiltinGlFrontFacingCaseInstance (Context& context)
+BuiltinGlFrontFacingCaseInstance::BuiltinGlFrontFacingCaseInstance (Context& context, VkPrimitiveTopology topology)
 	: ShaderRenderCaseInstance	(context)
+	, m_topology				(topology)
 {
 }
+
 
 TestStatus BuiltinGlFrontFacingCaseInstance::iterate (void)
 {
-	const UVec2		viewportSize	= getViewportSize();
-	const int		width			= viewportSize.x();
-	const int		height			= viewportSize.y();
-	const RGBA		threshold		(2, 2, 2, 2);
-	Surface			resImage		(width, height);
-	Surface			refImage		(width, height);
-	bool			compareOk		= false;
-	const deUint16	indices[12]		=
+	TestLog&					log				= m_context.getTestContext().getLog();
+	std::vector<Vec4>			vertices;
+	std::vector<Shader>			shaders;
+	FrontFacingVertexShader		vertexShader;
+	FrontFacingFragmentShader	fragmentShader;
+	std::string					testDesc;
+
+	vertices.push_back(Vec4( -0.75f,	-0.75f,	0.0f,	1.0f));
+	vertices.push_back(Vec4(  0.0f,		-0.75f,	0.0f,	1.0f));
+	vertices.push_back(Vec4( -0.37f,	0.75f,	0.0f,	1.0f));
+	vertices.push_back(Vec4(  0.37f,	0.75f,	0.0f,	1.0f));
+	vertices.push_back(Vec4(  0.75f,	-0.75f,	0.0f,	1.0f));
+	vertices.push_back(Vec4(  0.0f,		-0.75f,	0.0f,	1.0f));
+
+	shaders.push_back(Shader(VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("vert")));
+	shaders.push_back(Shader(VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("frag")));
+
+	testDesc = "gl_FrontFacing " + getPrimitiveTopologyShortName(m_topology) + " ";
+
+	DrawState					drawState		(m_topology, FRONTFACE_RENDERWIDTH, FRONTFACE_RENDERHEIGHT);
+	DrawCallData				drawCallData	(vertices);
+	VulkanProgram				vulkanProgram	(shaders);
+
+	VulkanDrawContext			dc(m_context, drawState, drawCallData, vulkanProgram);
+	dc.draw();
+
+	ReferenceDrawContext		refDrawContext(drawState, drawCallData, vertexShader, fragmentShader);
+	refDrawContext.draw();
+
+	log << TestLog::Image( "reference",
+							"reference",
+							tcu::ConstPixelBufferAccess(tcu::TextureFormat(
+									refDrawContext.getColorPixels().getFormat()),
+									refDrawContext.getColorPixels().getWidth(),
+									refDrawContext.getColorPixels().getHeight(),
+									1,
+									refDrawContext.getColorPixels().getDataPtr()));
+
+	log << TestLog::Image(	"result",
+							"result",
+							tcu::ConstPixelBufferAccess(tcu::TextureFormat(
+									dc.getColorPixels().getFormat()),
+									dc.getColorPixels().getWidth(),
+									dc.getColorPixels().getHeight(),
+									1,
+									dc.getColorPixels().getDataPtr()));
+
+	if (tcu::intThresholdPositionDeviationCompare(m_context.getTestContext().getLog(),
+												  "ComparisonResult",
+												  "Image comparison result",
+												  refDrawContext.getColorPixels(),
+												  dc.getColorPixels(),
+												  UVec4(0u),
+												  IVec3(1,1,0),
+												  false,
+												  tcu::COMPARE_LOG_RESULT))
 	{
-		0, 4, 1,
-		0, 5, 4,
-		1, 2, 3,
-		1, 3, 4
-	};
-
-	setup();
-	render(6, 4, indices);
-	copy(resImage.getAccess(), getResultImage().getAccess());
-
-	for (int y = 0; y < refImage.getHeight(); y++)
-	{
-		for (int x = 0; x < refImage.getWidth()/2; x++)
-			refImage.setPixel(x, y, RGBA::green());
-
-		for (int x = refImage.getWidth()/2; x < refImage.getWidth(); x++)
-			refImage.setPixel(x, y, RGBA::blue());
+		testDesc += "passed";
+		return tcu::TestStatus::pass(testDesc.c_str());
 	}
-
-	compareOk = pixelThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result", refImage, resImage, threshold, COMPARE_LOG_RESULT);
-
-	if (compareOk)
-		return TestStatus::pass("Result image matches reference");
 	else
-		return TestStatus::fail("Image mismatch");
-}
-
-void BuiltinGlFrontFacingCaseInstance::setupDefaultInputs (void)
-{
-	const float vertices[] =
 	{
-		-1.0f, -1.0f, 0.0f, 1.0f,
-		 0.0f, -1.0f, 0.0f, 1.0f,
-		 1.0f, -1.0f, 0.0f, 1.0f,
-		 1.0f,  1.0f, 0.0f, 1.0f,
-		 0.0f,  1.0f, 0.0f, 1.0f,
-		-1.0f,  1.0f, 0.0f, 1.0f
-	};
-
-	addAttribute(0u, VK_FORMAT_R32G32B32A32_SFLOAT, deUint32(sizeof(float) * 4), 6, vertices);
+		testDesc += "failed";
+		return tcu::TestStatus::fail(testDesc.c_str());
+	}
 }
 
 class BuiltinGlFrontFacingCase : public TestCase
 {
 public:
-								BuiltinGlFrontFacingCase	(TestContext& testCtx, const string& name, const string& description);
+								BuiltinGlFrontFacingCase	(TestContext& testCtx, VkPrimitiveTopology topology, const char* name, const char* description);
 	virtual						~BuiltinGlFrontFacingCase	(void);
 
 	void						initPrograms				(SourceCollections& dst) const;
@@ -126,10 +202,13 @@ public:
 private:
 								BuiltinGlFrontFacingCase	(const BuiltinGlFrontFacingCase&);	// not allowed!
 	BuiltinGlFrontFacingCase&	operator=					(const BuiltinGlFrontFacingCase&);	// not allowed!
+
+	const VkPrimitiveTopology	m_topology;
 };
 
-BuiltinGlFrontFacingCase::BuiltinGlFrontFacingCase (TestContext& testCtx, const string& name, const string& description)
-	: TestCase(testCtx, name, description)
+BuiltinGlFrontFacingCase::BuiltinGlFrontFacingCase (TestContext& testCtx, VkPrimitiveTopology topology, const char* name, const char* description)
+	: TestCase					(testCtx, name, description)
+	, m_topology				(topology)
 {
 }
 
@@ -137,31 +216,40 @@ BuiltinGlFrontFacingCase::~BuiltinGlFrontFacingCase (void)
 {
 }
 
-void BuiltinGlFrontFacingCase::initPrograms (SourceCollections& dst) const
+void BuiltinGlFrontFacingCase::initPrograms (SourceCollections& programCollection) const
 {
-	dst.glslSources.add("vert") << glu::VertexSource(
-		"#version 310 es\n"
-		"layout(location = 0) in highp vec4 a_position;\n"
-		"void main (void)\n"
-		"{\n"
-		"       gl_Position = a_position;\n"
-		"}\n");
+	{
+		std::ostringstream vertexSource;
+		vertexSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+			<< "\n"
+			<< "layout(location = 0) in highp vec4 position;\n"
+			<< "void main()\n"
+			<< "{\n"
+			<< "gl_Position = position;\n"
+			<< "gl_PointSize = 1.0;\n"
+			<< "}\n";
+		programCollection.glslSources.add("vert") << glu::VertexSource(vertexSource.str());
+	}
 
-	dst.glslSources.add("frag") << glu::FragmentSource(
-		"#version 310 es\n"
-		"layout(location = 0) out lowp vec4 o_color;\n"
-		"void main (void)\n"
-		"{\n"
-		"       if (gl_FrontFacing)\n"
-		"               o_color = vec4(0.0, 1.0, 0.0, 1.0);\n"
-		"       else\n"
-		"               o_color = vec4(0.0, 0.0, 1.0, 1.0);\n"
-		"}\n");
+	{
+		std::ostringstream fragmentSource;
+		fragmentSource << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
+			<< "\n"
+			<< "layout(location = 0) out mediump vec4 color;\n"
+			<< "void main()\n"
+			<< "{\n"
+			<< "if (gl_FrontFacing)\n"
+			<< "	color = vec4(1.0, 0.0, 0.0, 1.0);\n"
+			<< "else\n"
+			<< "	color = vec4(0.0, 1.0, 0.0, 1.0);\n"
+			<< "}\n";
+		programCollection.glslSources.add("frag") << glu::FragmentSource(fragmentSource.str());
+	}
 }
 
 TestInstance* BuiltinGlFrontFacingCase::createInstance (Context& context) const
 {
-	return new BuiltinGlFrontFacingCaseInstance(context);
+	return new BuiltinGlFrontFacingCaseInstance(context, m_topology);
 }
 
 class BuiltinGlFragCoordXYZCaseInstance : public ShaderRenderCaseInstance
@@ -176,6 +264,7 @@ public:
 BuiltinGlFragCoordXYZCaseInstance::BuiltinGlFragCoordXYZCaseInstance (Context& context)
 	: ShaderRenderCaseInstance	(context)
 {
+	m_colorFormat = VK_FORMAT_R16G16B16A16_UNORM;
 }
 
 TestStatus BuiltinGlFragCoordXYZCaseInstance::iterate (void)
@@ -184,10 +273,7 @@ TestStatus BuiltinGlFragCoordXYZCaseInstance::iterate (void)
 	const int		width			= viewportSize.x();
 	const int		height			= viewportSize.y();
 	const tcu::Vec3	scale			(1.f / float(width), 1.f / float(height), 1.0f);
-	const tcu::RGBA	threshold		(2, 2, 2, 2);
-	Surface			resImage		(width, height);
-	Surface			refImage		(width, height);
-	bool			compareOk		= false;
+	const float		precision		= 0.00001f;
 	const deUint16	indices[6]		=
 	{
 		2, 1, 3,
@@ -198,30 +284,28 @@ TestStatus BuiltinGlFragCoordXYZCaseInstance::iterate (void)
 	addUniform(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, scale);
 
 	render(4, 2, indices);
-	copy(resImage.getAccess(), getResultImage().getAccess());
 
 	// Reference image
-	for (int y = 0; y < refImage.getHeight(); y++)
+	for (int y = 0; y < height; y++)
 	{
-		for (int x = 0; x < refImage.getWidth(); x++)
+		for (int x = 0; x < width; x++)
 		{
-			const float	xf			= (float(x)+.5f) / float(refImage.getWidth());
-			const float	yf			= (float(refImage.getHeight()-y-1)+.5f) / float(refImage.getHeight());
+			const float	xf			= (float(x) + .5f) / float(width);
+			const float	yf			= (float(height - y - 1) + .5f) / float(height);
 			const float	z			= (xf + yf) / 2.0f;
-			const Vec3	fragCoord	(float(x)+.5f, float(y)+.5f, z);
+			const Vec3	fragCoord	(float(x) + .5f, float(y) + .5f, z);
 			const Vec3	scaledFC	= fragCoord*scale;
 			const Vec4	color		(scaledFC.x(), scaledFC.y(), scaledFC.z(), 1.0f);
+			const Vec4	resultColor	= getResultImage().getAccess().getPixel(x, y);
 
-			refImage.setPixel(x, y, RGBA(color));
+			if (de::abs(color.x() - resultColor.x()) > precision ||
+				de::abs(color.y() - resultColor.y()) > precision ||
+				de::abs(color.z() - resultColor.z()) > precision)
+			return TestStatus::fail("Image mismatch");
 		}
 	}
 
-	compareOk = pixelThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result", refImage, resImage, threshold, COMPARE_LOG_RESULT);
-
-	if (compareOk)
-		return TestStatus::pass("Result image matches reference");
-	else
-		return TestStatus::fail("Image mismatch");
+	return TestStatus::pass("Result image matches reference");
 }
 
 void BuiltinGlFragCoordXYZCaseInstance::setupDefaultInputs (void)
@@ -308,6 +392,7 @@ BuiltinGlFragCoordWCaseInstance::BuiltinGlFragCoordWCaseInstance (Context& conte
 	: ShaderRenderCaseInstance	(context)
 	, m_w						(1.7f, 2.0f, 1.2f, 1.0f)
 {
+	m_colorFormat = VK_FORMAT_R16G16B16A16_UNORM;
 }
 
 TestStatus BuiltinGlFragCoordWCaseInstance::iterate (void)
@@ -315,10 +400,7 @@ TestStatus BuiltinGlFragCoordWCaseInstance::iterate (void)
 	const UVec2		viewportSize	= getViewportSize();
 	const int		width			= viewportSize.x();
 	const int		height			= viewportSize.y();
-	const tcu::RGBA	threshold		(2, 2, 2, 2);
-	Surface			resImage		(width, height);
-	Surface			refImage		(width, height);
-	bool			compareOk		= false;
+	const float		precision		= 0.00001f;
 	const deUint16	indices[6]		=
 	{
 		2, 1, 3,
@@ -327,30 +409,28 @@ TestStatus BuiltinGlFragCoordWCaseInstance::iterate (void)
 
 	setup();
 	render(4, 2, indices);
-	copy(resImage.getAccess(), getResultImage().getAccess());
 
 	// Reference image
-	for (int y = 0; y < refImage.getHeight(); y++)
+	for (int y = 0; y < height; y++)
 	{
-		for (int x = 0; x < refImage.getWidth(); x++)
+		for (int x = 0; x < width; x++)
 		{
-			const float	xf			= (float(x)+.5f) / float(refImage.getWidth());
-			const float	yf			= (float(refImage.getHeight()-y-1)+.5f) / float(refImage.getHeight());
+			const float	xf			= (float(x) + .5f) / float(width);
+			const float	yf			= (float(height - y - 1) +.5f) / float(height);
 			const float	oow			= ((xf + yf) < 1.0f)
 										? projectedTriInterpolate(Vec3(m_w[0], m_w[1], m_w[2]), Vec3(m_w[0], m_w[1], m_w[2]), xf, yf)
-										: projectedTriInterpolate(Vec3(m_w[3], m_w[2], m_w[1]), Vec3(m_w[3], m_w[2], m_w[1]), 1.0f-xf, 1.0f-yf);
+										: projectedTriInterpolate(Vec3(m_w[3], m_w[2], m_w[1]), Vec3(m_w[3], m_w[2], m_w[1]), 1.0f - xf, 1.0f - yf);
 			const Vec4	color		(0.0f, oow - 1.0f, 0.0f, 1.0f);
+			const Vec4	resultColor	= getResultImage().getAccess().getPixel(x, y);
 
-			refImage.setPixel(x, y, RGBA(color));
+			if (de::abs(color.x() - resultColor.x()) > precision ||
+				de::abs(color.y() - resultColor.y()) > precision ||
+				de::abs(color.z() - resultColor.z()) > precision)
+			return TestStatus::fail("Image mismatch");
 		}
 	}
 
-	compareOk = pixelThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result", refImage, resImage, threshold, COMPARE_LOG_RESULT);
-
-	if (compareOk)
-		return TestStatus::pass("Result image matches reference");
-	else
-		return TestStatus::fail("Image mismatch");
+	return TestStatus::pass("Result image matches reference");
 }
 
 void BuiltinGlFragCoordWCaseInstance::setupDefaultInputs (void)
@@ -439,15 +519,21 @@ TestStatus BuiltinGlPointCoordCaseInstance::iterate (void)
 	Surface					resImage		(width, height);
 	Surface					refImage		(width, height);
 	bool					compareOk		= false;
-	VkPhysicalDeviceLimits	limits			= m_context.getDeviceProperties().limits;
 
 	// Compute coordinates.
 	{
+		const VkPhysicalDeviceLimits&	limits					= m_context.getDeviceProperties().limits;
+		const float						minPointSize			= limits.pointSizeRange[0];
+		const float						maxPointSize			= limits.pointSizeRange[1];
+		const int						pointSizeDeltaMultiples	= de::max(1, deCeilFloatToInt32((maxPointSize - minPointSize) / limits.pointSizeGranularity));
+
+		TCU_CHECK(minPointSize <= maxPointSize);
+
 		for (vector<Vec3>::iterator coord = coords.begin(); coord != coords.end(); ++coord)
 		{
 			coord->x() = rnd.getFloat(-0.9f, 0.9f);
 			coord->y() = rnd.getFloat(-0.9f, 0.9f);
-			coord->z() = limits.pointSizeRange[0] + float(rnd.getInt(0, int((limits.pointSizeRange[1] - limits.pointSizeRange[0]) / limits.pointSizeGranularity))) * limits.pointSizeGranularity;
+			coord->z() = de::min(maxPointSize, minPointSize + float(rnd.getInt(0, pointSizeDeltaMultiples)) * limits.pointSizeGranularity);
 		}
 	}
 
@@ -458,12 +544,16 @@ TestStatus BuiltinGlPointCoordCaseInstance::iterate (void)
 
 	// Draw reference
 	clear(refImage.getAccess(), m_clearColor);
+
 	for (vector<Vec3>::const_iterator pointIter = coords.begin(); pointIter != coords.end(); ++pointIter)
 	{
-		const int	x0		= deRoundFloatToInt32(float(width) *(pointIter->x()*0.5f + 0.5f) - pointIter->z()*0.5f);
-		const int	y0		= deRoundFloatToInt32(float(height)*(pointIter->y()*0.5f + 0.5f) - pointIter->z()*0.5f);
-		const int	x1		= deRoundFloatToInt32(float(width) *(pointIter->x()*0.5f + 0.5f) + pointIter->z()*0.5f);
-		const int	y1		= deRoundFloatToInt32(float(height)*(pointIter->y()*0.5f + 0.5f) + pointIter->z()*0.5f);
+		const float	centerX	= float(width) *(pointIter->x()*0.5f + 0.5f);
+		const float	centerY	= float(height)*(pointIter->y()*0.5f + 0.5f);
+		const float	size	= pointIter->z();
+		const int	x0		= deRoundFloatToInt32(centerX - size*0.5f);
+		const int	y0		= deRoundFloatToInt32(centerY - size*0.5f);
+		const int	x1		= deRoundFloatToInt32(centerX + size*0.5f);
+		const int	y1		= deRoundFloatToInt32(centerY + size*0.5f);
 		const int	w		= x1-x0;
 		const int	h		= y1-y0;
 
@@ -471,11 +561,13 @@ TestStatus BuiltinGlPointCoordCaseInstance::iterate (void)
 		{
 			for (int xo = 0; xo < w; xo++)
 			{
-				const float		xf		= (float(xo)+0.5f) / float(w);
-				const float		yf		= (float(yo)+0.5f) / float(h);
-				const Vec4		color	(xf, yf, 0.0f, 1.0f);
 				const int		dx		= x0+xo;
 				const int		dy		= y0+yo;
+				const float		fragX	= float(dx) + 0.5f;
+				const float		fragY	= float(dy) + 0.5f;
+				const float		s		= 0.5f + (fragX - centerX) / size;
+				const float		t		= 0.5f + (fragY - centerY) / size;
+				const Vec4		color	(s, t, 0.0f, 1.0f);
 
 				if (de::inBounds(dx, 0, refImage.getWidth()) && de::inBounds(dy, 0, refImage.getHeight()))
 					refImage.setPixel(dx, dy, RGBA(color));
@@ -798,12 +890,33 @@ TestCaseGroup* createBuiltinVarTests (TestContext& testCtx)
 	de::MovePtr<TestCaseGroup> builtinGroup			(new TestCaseGroup(testCtx, "builtin_var", "Shader builtin variable tests."));
 	de::MovePtr<TestCaseGroup> simpleGroup			(new TestCaseGroup(testCtx, "simple", "Simple cases."));
 	de::MovePtr<TestCaseGroup> inputVariationsGroup	(new TestCaseGroup(testCtx, "input_variations", "Input type variation tests."));
+	de::MovePtr<TestCaseGroup> frontFacingGroup		(new TestCaseGroup(testCtx, "frontfacing", "Test gl_Frontfacing keyword."));
 
-	simpleGroup->addChild(new BuiltinGlFrontFacingCase(testCtx, "frontfacing", "FrontFacing test"));
 	simpleGroup->addChild(new BuiltinGlFragCoordXYZCase(testCtx, "fragcoord_xyz", "FragCoord xyz test"));
 	simpleGroup->addChild(new BuiltinGlFragCoordWCase(testCtx, "fragcoord_w", "FragCoord w test"));
 	simpleGroup->addChild(new BuiltinGlPointCoordCase(testCtx, "pointcoord", "PointCoord test"));
 
+	// gl_FrontFacing tests
+	{
+		static const struct PrimitiveTable
+		{
+			const char*				name;
+			const char*				desc;
+			VkPrimitiveTopology		primitive;
+		} frontfacingCases[] =
+		{
+			{ "point_list",		"Test that points are frontfacing",							VK_PRIMITIVE_TOPOLOGY_POINT_LIST },
+			{ "line_list",		"Test that lines are frontfacing",							VK_PRIMITIVE_TOPOLOGY_LINE_LIST },
+			{ "triangle_list",	"Test that triangles can be frontfacing or backfacing",		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST },
+			{ "triangle_strip",	"Test that traiangle strips can be front or back facing",	VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP },
+			{ "triangle_fan",	"Test that triangle fans can be front or back facing",		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN },
+		};
+
+		for (deUint32 ndx = 0; ndx < DE_LENGTH_OF_ARRAY(frontfacingCases); ndx++)
+			frontFacingGroup->addChild(new BuiltinGlFrontFacingCase(testCtx, frontfacingCases[ndx].primitive, frontfacingCases[ndx].name, frontfacingCases[ndx].desc));
+	}
+
+	builtinGroup->addChild(frontFacingGroup.release());
 	builtinGroup->addChild(simpleGroup.release());
 
 	for (deUint16 shaderType = 0; shaderType <= (SHADER_INPUT_BUILTIN_BIT | SHADER_INPUT_VARYING_BIT | SHADER_INPUT_CONSTANT_BIT); ++shaderType)

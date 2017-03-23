@@ -24,7 +24,9 @@
 
 #include "vktApiGetMemoryCommitment.hpp"
 
-#include "vkDeviceUtil.cpp"
+#include "vkDeviceUtil.hpp"
+#include "vkQueryUtil.hpp"
+#include "vkRefUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkPrograms.hpp"
@@ -114,7 +116,7 @@ tcu::TestStatus MemoryCommitmentTestInstance::iterate(void)
 	Move<VkShaderModule>					fragmentShaderModule;
 	Move<VkPipeline>						graphicsPipelines;
 
-	if(memoryTypeIndex == -1u)
+	if (memoryTypeIndex == static_cast<deUint32>(-1))
 		TCU_THROW(NotSupportedError, "Lazily allocated bit is not supported");
 
 	const VkImageCreateInfo	imageParams			=
@@ -644,14 +646,7 @@ tcu::TestStatus MemoryCommitmentAllocateOnlyTestInstance::iterate(void)
 
 void MemoryCommitmentTestInstance::submitCommandsAndWait (const DeviceInterface& vkd, const VkDevice device, const VkQueue queue, const VkCommandBuffer& cmdBuffer)
 {
-	const VkFenceCreateInfo fenceParams =
-	{
-		VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,	// VkStructureType		sType;
-		DE_NULL,								// const void*			pNext;
-		0u										// VkFenceCreateFlags	flags;
-	};
-
-	Move<VkFence> fence = createFence(vkd, device, &fenceParams);
+	Move<VkFence> fence = createFence(vkd, device);
 
 	const VkSubmitInfo	submitInfo	=
 	{
@@ -677,7 +672,8 @@ deUint32 MemoryCommitmentTestInstance::getMemoryTypeIndex(VkMemoryPropertyFlags 
 		if((pMemoryProperties.memoryTypes[memoryTypeIndex].propertyFlags & propertyFlag) == propertyFlag)
 			return memoryTypeIndex;
 	}
-	return -1u;
+
+	return static_cast<deUint32>(-1);
 }
 
 void MemoryCommitmentTestCase::initPrograms (SourceCollections& programCollection) const
@@ -703,34 +699,19 @@ void MemoryCommitmentTestCase::initPrograms (SourceCollections& programCollectio
 
 Move<VkCommandPool> MemoryCommitmentTestInstance::createCommandPool() const
 {
-	const VkDevice					device				= m_context.getDevice();
-	const DeviceInterface&			vkd					= m_context.getDeviceInterface();
-	const deUint32					queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
-	const VkCommandPoolCreateInfo	cmdPoolCreateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,		// VkStructureType             sType;
-		DE_NULL,										// const void*                 pNext;
-		VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,			// VkCommandPoolCreateFlags    flags;
-		queueFamilyIndex								// deUint32                    queueFamilyIndex;
-	};
+	const VkDevice			device				= m_context.getDevice();
+	const DeviceInterface&	vkd					= m_context.getDeviceInterface();
+	const deUint32			queueFamilyIndex	= m_context.getUniversalQueueFamilyIndex();
 
-	return vk::createCommandPool(vkd, device, &cmdPoolCreateInfo, DE_NULL);
+	return vk::createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 }
 
 Move<VkCommandBuffer> MemoryCommitmentTestInstance::allocatePrimaryCommandBuffer (VkCommandPool commandPool) const
 {
 	const VkDevice						device					= m_context.getDevice();
 	const DeviceInterface&				vkd						= m_context.getDeviceInterface();
-	const VkCommandBufferAllocateInfo	cmdBufferAllocateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// VkStructureType             sType;
-		DE_NULL,										// const void*                 pNext;
-		commandPool,									// VkCommandPool               commandPool;
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// VkCommandBufferLevel        level;
-		1												// deUint32                    commandBufferCount;
-	};
 
-	return vk::allocateCommandBuffer(vkd, device, &cmdBufferAllocateInfo);
+	return vk::allocateCommandBuffer(vkd, device, commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 }
 
 bool MemoryCommitmentTestInstance::isDeviceMemoryCommitmentOk(const VkMemoryRequirements memoryRequirements)

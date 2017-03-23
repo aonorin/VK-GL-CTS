@@ -52,6 +52,7 @@
 #include "gl4cShadingLanguage420PackTests.hpp"
 #include "gl4cSparseBufferTests.hpp"
 #include "gl4cSparseTexture2Tests.hpp"
+#include "gl4cSparseTextureClampTests.hpp"
 #include "gl4cSparseTextureTests.hpp"
 #include "gl4cStencilTexturingTests.hpp"
 #include "gl4cSyncTests.hpp"
@@ -76,6 +77,7 @@
 #include "../gles31/es31cSampleShadingTests.hpp"
 #include "../gles31/es31cSeparateShaderObjsTests.hpp"
 #include "../gles31/es31cShaderBitfieldOperationTests.hpp"
+#include "../glesext/draw_elements_base_vertex/esextcDrawElementsBaseVertexTests.hpp"
 #include "../glesext/geometry_shader/esextcGeometryShaderTests.hpp"
 #include "../glesext/gpu_shader5/esextcGPUShader5Tests.hpp"
 #include "../glesext/tessellation_shader/esextcTessellationShaderTests.hpp"
@@ -106,6 +108,8 @@ void GL40TestPackage::init(void)
 
 	try
 	{
+		glcts::ExtParameters extParams(glu::GLSL_VERSION_400, glcts::EXTENSIONTYPE_NONE);
+		addChild(new glcts::DrawElementsBaseVertexTests(getContext(), extParams));
 		addChild(new gl4cts::GPUShaderFP64Tests(getContext()));
 		addChild(new gl4cts::TextureGatherTests(getContext()));
 		addChild(new glcts::DrawIndirectTestsGL40(getContext()));
@@ -327,6 +331,7 @@ void GL45TestPackage::init(void)
 		addChild(new gl4cts::ParallelShaderCompileTests(getContext()));
 		addChild(new gl4cts::PostDepthCoverage(getContext()));
 		addChild(new gl4cts::SparseTexture2Tests(getContext()));
+		addChild(new gl4cts::SparseTextureClampTests(getContext()));
 		addChild(new gl4cts::TextureFilterMinmax(getContext()));
 	}
 	catch (...)

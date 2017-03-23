@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision 33312.
+ * Generated from Khronos GL API description (gl.xml) revision db2965fc26513b254e2f964171f79e416a05fe29.
  */
 #define GL_DEPTH_BUFFER_BIT												0x00000100
 #define GL_STENCIL_BUFFER_BIT											0x00000400
@@ -453,14 +453,19 @@
 #define GL_DEBUG_TYPE_OTHER												0x8251
 #define GL_DEBUG_TYPE_OTHER_KHR											0x8251
 #define GL_LOSE_CONTEXT_ON_RESET										0x8252
+#define GL_LOSE_CONTEXT_ON_RESET_EXT									0x8252
 #define GL_LOSE_CONTEXT_ON_RESET_KHR									0x8252
 #define GL_GUILTY_CONTEXT_RESET											0x8253
+#define GL_GUILTY_CONTEXT_RESET_EXT										0x8253
 #define GL_GUILTY_CONTEXT_RESET_KHR										0x8253
 #define GL_INNOCENT_CONTEXT_RESET										0x8254
+#define GL_INNOCENT_CONTEXT_RESET_EXT									0x8254
 #define GL_INNOCENT_CONTEXT_RESET_KHR									0x8254
 #define GL_UNKNOWN_CONTEXT_RESET										0x8255
+#define GL_UNKNOWN_CONTEXT_RESET_EXT									0x8255
 #define GL_UNKNOWN_CONTEXT_RESET_KHR									0x8255
 #define GL_RESET_NOTIFICATION_STRATEGY									0x8256
+#define GL_RESET_NOTIFICATION_STRATEGY_EXT								0x8256
 #define GL_RESET_NOTIFICATION_STRATEGY_KHR								0x8256
 #define GL_PROGRAM_BINARY_RETRIEVABLE_HINT								0x8257
 #define GL_PROGRAM_SEPARABLE											0x8258
@@ -479,6 +484,7 @@
 #define GL_UNDEFINED_VERTEX												0x8260
 #define GL_UNDEFINED_VERTEX_EXT											0x8260
 #define GL_NO_RESET_NOTIFICATION										0x8261
+#define GL_NO_RESET_NOTIFICATION_EXT									0x8261
 #define GL_NO_RESET_NOTIFICATION_KHR									0x8261
 #define GL_MAX_COMPUTE_SHARED_MEMORY_SIZE								0x8262
 #define GL_MAX_COMPUTE_UNIFORM_COMPONENTS								0x8263
@@ -1426,6 +1432,7 @@
 #define GL_ATOMIC_COUNTER_BUFFER_REFERENCED_BY_COMPUTE_SHADER			0x90ED
 #define GL_DISPATCH_INDIRECT_BUFFER										0x90EE
 #define GL_DISPATCH_INDIRECT_BUFFER_BINDING								0x90EF
+#define GL_CONTEXT_ROBUST_ACCESS_EXT									0x90F3
 #define GL_CONTEXT_ROBUST_ACCESS_KHR									0x90F3
 #define GL_TEXTURE_2D_MULTISAMPLE										0x9100
 #define GL_PROXY_TEXTURE_2D_MULTISAMPLE									0x9101

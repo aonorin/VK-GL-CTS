@@ -902,8 +902,10 @@ bool BufferTest::CreateBufferTexture(bool use_range_version)
  *         Viewport is set up. Content of the framebuffer is cleared.
  *
  *  @note The function may throw if unexpected error has occured.
+ *
+ *  @return if the framebuffer returned is supported
  */
-void BufferTest::PrepareFramebuffer(const glw::GLenum internal_format)
+bool BufferTest::PrepareFramebuffer(const glw::GLenum internal_format)
 {
 	/* Shortcut for GL functionality. */
 	const glw::Functions& gl = m_context.getRenderContext().getFunctions();
@@ -929,7 +931,10 @@ void BufferTest::PrepareFramebuffer(const glw::GLenum internal_format)
 
 	if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		throw 0;
+		if (gl.checkFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_UNSUPPORTED)
+			return false;
+		else
+			throw 0;
 	}
 
 	gl.viewport(0, 0, s_fbo_size_x, s_fbo_size_y);
@@ -941,6 +946,8 @@ void BufferTest::PrepareFramebuffer(const glw::GLenum internal_format)
 
 	gl.clear(GL_COLOR_BUFFER_BIT);
 	GLU_EXPECT_NO_ERROR(gl.getError(), "glClear call failed.");
+
+	return true;
 }
 
 /** @brief Create program.
@@ -1187,7 +1194,19 @@ template <typename T, glw::GLint S, bool N>
 bool BufferTest::Test(bool use_range_version)
 {
 	/* Setup. */
-	PrepareFramebuffer(InternalFormat<T, S, N>());
+	if (!PrepareFramebuffer(InternalFormat<T, S, N>()))
+	{
+		/**
+                 * If the framebuffer it not supported, means that the
+                 * tested combination is unsupported for this driver,
+                 * but allowed to be unsupported by OpenGL spec, so we
+                 * just skip.
+                 */
+		CleanFramebuffer();
+		CleanErrors();
+
+		return true;
+	}
 
 	if (!CreateBufferTexture<T, S, N>(use_range_version))
 	{
@@ -13168,22 +13187,22 @@ tcu::TestNode::IterateResult ParameterErrorsTest::iterate()
 		 not one of the supported texture targets (eg. TEXTURE_BUFFER). */
 		gl.getTextureParameterfv(texture_buffer, GL_TEXTURE_TARGET, storef);
 		is_ok &=
-			CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameterfv",
+			CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glGetTextureParameterfv",
 							 "the effective target is not one of the supported texture targets (eg. TEXTURE_BUFFER).");
 
 		gl.getTextureParameterIiv(texture_buffer, GL_TEXTURE_TARGET, storei);
 		is_ok &=
-			CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameterIiv",
+			CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glGetTextureParameterIiv",
 							 "the effective target is not one of the supported texture targets (eg. TEXTURE_BUFFER).");
 
 		gl.getTextureParameterIuiv(texture_buffer, GL_TEXTURE_TARGET, storeu);
 		is_ok &=
-			CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameterIuiv",
+			CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glGetTextureParameterIuiv",
 							 "the effective target is not one of the supported texture targets (eg. TEXTURE_BUFFER).");
 
 		gl.getTextureParameteriv(texture_buffer, GL_TEXTURE_TARGET, storei);
 		is_ok &=
-			CheckErrorAndLog(m_context, GL_INVALID_OPERATION, "glGetTextureParameteriv",
+			CheckErrorAndLog(m_context, GL_INVALID_ENUM, "glGetTextureParameteriv",
 							 "the effective target is not one of the supported texture targets (eg. TEXTURE_BUFFER).");
 	}
 	catch (...)

@@ -222,15 +222,7 @@ Move<VkPipeline> createComputePipeline (const DeviceInterface& vkdi, const VkDev
  *//*--------------------------------------------------------------------*/
 Move<VkCommandPool> createCommandPool (const DeviceInterface& vkdi, VkDevice device, deUint32 queueFamilyIndex)
 {
-	const VkCommandPoolCreateInfo cmdPoolCreateInfo =
-	{
-		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,	// sType
-		DE_NULL,									// pNext
-		0u,											// flags
-		queueFamilyIndex,							// queueFamilyIndex
-	};
-
-	return createCommandPool(vkdi, device, &cmdPoolCreateInfo);
+	return createCommandPool(vkdi, device, 0u, queueFamilyIndex);
 }
 
 } // anonymous
@@ -254,18 +246,20 @@ namespace SpirVAssembly
 class SpvAsmComputeShaderInstance : public TestInstance
 {
 public:
-								SpvAsmComputeShaderInstance	(Context& ctx, const ComputeShaderSpec& spec);
+								SpvAsmComputeShaderInstance	(Context& ctx, const ComputeShaderSpec& spec, const ComputeTestFeatures features);
 	tcu::TestStatus				iterate						(void);
 
 private:
 	const ComputeShaderSpec&	m_shaderSpec;
+	const ComputeTestFeatures	m_features;
 };
 
 // ComputeShaderTestCase implementations
 
-SpvAsmComputeShaderCase::SpvAsmComputeShaderCase (tcu::TestContext& testCtx, const char* name, const char* description, const ComputeShaderSpec& spec)
+SpvAsmComputeShaderCase::SpvAsmComputeShaderCase (tcu::TestContext& testCtx, const char* name, const char* description, const ComputeShaderSpec& spec, const ComputeTestFeatures features)
 	: TestCase		(testCtx, name, description)
 	, m_shaderSpec	(spec)
+	, m_features	(features)
 {
 }
 
@@ -276,22 +270,34 @@ void SpvAsmComputeShaderCase::initPrograms (SourceCollections& programCollection
 
 TestInstance* SpvAsmComputeShaderCase::createInstance (Context& ctx) const
 {
-	return new SpvAsmComputeShaderInstance(ctx, m_shaderSpec);
+	return new SpvAsmComputeShaderInstance(ctx, m_shaderSpec, m_features);
 }
 
 // ComputeShaderTestInstance implementations
 
-SpvAsmComputeShaderInstance::SpvAsmComputeShaderInstance (Context& ctx, const ComputeShaderSpec& spec)
+SpvAsmComputeShaderInstance::SpvAsmComputeShaderInstance (Context& ctx, const ComputeShaderSpec& spec, const ComputeTestFeatures features)
 	: TestInstance	(ctx)
 	, m_shaderSpec	(spec)
+	, m_features	(features)
 {
 }
 
 tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 {
+	const VkPhysicalDeviceFeatures&		features = m_context.getDeviceFeatures();
 	const DeviceInterface&				vkdi				= m_context.getDeviceInterface();
 	const VkDevice&						device				= m_context.getDevice();
 	Allocator&							allocator			= m_context.getDefaultAllocator();
+
+	if ((m_features == COMPUTE_TEST_USES_INT16 || m_features == COMPUTE_TEST_USES_INT16_INT64) && !features.shaderInt16)
+	{
+		throw tcu::NotSupportedError("shaderInt16 feature is not supported");
+	}
+
+	if ((m_features == COMPUTE_TEST_USES_INT64 || m_features == COMPUTE_TEST_USES_INT16_INT64) && !features.shaderInt64)
+	{
+		throw tcu::NotSupportedError("shaderInt64 feature is not supported");
+	}
 
 	vector<AllocationSp>				inputAllocs;
 	vector<AllocationSp>				outputAllocs;
@@ -347,16 +353,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	// Create command buffer and record commands
 
 	const Unique<VkCommandPool>			cmdPool				(createCommandPool(vkdi, device, m_context.getUniversalQueueFamilyIndex()));
-	const VkCommandBufferAllocateInfo	cmdBufferCreateInfo	=
-	{
-		VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,	// sType
-		NULL,											// pNext
-		*cmdPool,										// cmdPool
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY,				// level
-		1u												// count
-	};
-
-	Unique<VkCommandBuffer>				cmdBuffer			(allocateCommandBuffer(vkdi, device, &cmdBufferCreateInfo));
+	Unique<VkCommandBuffer>				cmdBuffer			(allocateCommandBuffer(vkdi, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
 	const VkCommandBufferBeginInfo		cmdBufferBeginInfo	=
 	{
@@ -376,13 +373,7 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 
 	// Create fence and run.
 
-	const VkFenceCreateInfo			fenceCreateInfo		=
-	{
-		 VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,		// sType
-		 NULL,										// pNext
-		 0											// flags
-    };
-	const Unique<VkFence>			cmdCompleteFence	(createFence(vkdi, device, &fenceCreateInfo));
+	const Unique<VkFence>			cmdCompleteFence	(createFence(vkdi, device));
 	const deUint64					infiniteTimeout		= ~(deUint64)0u;
 	const VkSubmitInfo				submitInfo			=
 	{
@@ -417,50 +408,6 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate (void)
 	}
 
 	return tcu::TestStatus::pass("Output match with expected");
-}
-
-class ConvertTestInstance : public SpvAsmComputeShaderInstance
-{
-public:
-						ConvertTestInstance	(Context& ctx, const ComputeShaderSpec& spec, const ConvertTestFeatures features);
-	tcu::TestStatus		iterate				(void);
-private:
-	const ConvertTestFeatures	m_features;
-};
-
-ConvertTestInstance::ConvertTestInstance (Context& ctx, const ComputeShaderSpec& spec, const ConvertTestFeatures features)
-	: SpvAsmComputeShaderInstance	(ctx, spec)
-	, m_features					(features)
-{
-}
-
-tcu::TestStatus ConvertTestInstance::iterate (void)
-{
-	const VkPhysicalDeviceFeatures&		features = m_context.getDeviceFeatures();
-
-	if ((m_features == CONVERT_TEST_USES_INT16 || m_features == CONVERT_TEST_USES_INT16_INT64) && !features.shaderInt16)
-	{
-		throw tcu::NotSupportedError("shaderInt16 feature is not supported");
-	}
-
-	if ((m_features == CONVERT_TEST_USES_INT64 || m_features == CONVERT_TEST_USES_INT16_INT64) && !features.shaderInt64)
-	{
-		throw tcu::NotSupportedError("shaderInt64 feature is not supported");
-	}
-
-	return SpvAsmComputeShaderInstance::iterate();
-}
-
-ConvertTestCase::ConvertTestCase (tcu::TestContext& testCtx, const char* name, const char* description, const ComputeShaderSpec& spec, const ConvertTestFeatures features)
-	: SpvAsmComputeShaderCase	(testCtx, name, description, spec)
-	, m_shaderSpec				(spec)
-	, m_features				(features)
-{
-}
-
-TestInstance* ConvertTestCase::createInstance (Context& ctx) const
-{
-	return new ConvertTestInstance(ctx, m_shaderSpec, m_features);
 }
 
 } // SpirVAssembly

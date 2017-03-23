@@ -23,7 +23,7 @@
 from build.common import DEQP_DIR
 from build.config import ANY_GENERATOR
 from build_caselists import Module, getModuleByName, getBuildConfig, DEFAULT_BUILD_DIR, DEFAULT_TARGET
-from mustpass import Project, Package, Mustpass, Configuration, include, exclude, genMustpassLists
+from mustpass import Project, Package, Mustpass, Configuration, include, exclude, genMustpassLists, parseBuildConfigFromCmdLineArgs
 
 import os
 
@@ -345,7 +345,8 @@ NYC_VULKAN_PKG					= Package(module = VULKAN_MODULE, configurations = [
 
 MASTER_EGL_COMMON_FILTERS		= [include("egl-master.txt"),
 								   exclude("egl-test-issues.txt"),
-								   exclude("egl-internal-api-tests.txt")]
+								   exclude("egl-internal-api-tests.txt"),
+								   exclude("egl-manual-robustness.txt")]
 MASTER_EGL_PKG					= Package(module = EGL_MODULE, configurations = [
 		# Master
 		Configuration(name			= "master",
@@ -497,8 +498,8 @@ MASTER_GLES31_PKG				= Package(module = GLES31_MODULE, configurations = [
 MASTER_VULKAN_FILTERS			= [
 		include("vk-master.txt"),
 		exclude("vk-not-applicable.txt"),
+		exclude("vk-excluded-tests.txt"),
 		exclude("vk-test-issues.txt"),
-		exclude("vk-hw-issues.txt")
 	]
 MASTER_VULKAN_PKG				= Package(module = VULKAN_MODULE, configurations = [
 		Configuration(name			= "master",
@@ -514,7 +515,5 @@ MUSTPASS_LISTS				= [
 		Mustpass(project = CTS_PROJECT, version = "master",		packages = [MASTER_EGL_PKG, MASTER_GLES2_PKG, MASTER_GLES3_PKG, MASTER_GLES31_PKG, MASTER_VULKAN_PKG])
 	]
 
-BUILD_CONFIG				= getBuildConfig(DEFAULT_BUILD_DIR, DEFAULT_TARGET, "Debug")
-
 if __name__ == "__main__":
-	genMustpassLists(MUSTPASS_LISTS, ANY_GENERATOR, BUILD_CONFIG)
+	genMustpassLists(MUSTPASS_LISTS, ANY_GENERATOR, parseBuildConfigFromCmdLineArgs())
