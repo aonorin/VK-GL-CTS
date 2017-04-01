@@ -155,6 +155,8 @@ set(DEQP_GLES31_FUNCTIONAL_SRCS
 	es31fNegativeShaderFunctionTests.hpp
 	es31fNegativeShaderDirectiveTests.cpp
 	es31fNegativeShaderDirectiveTests.hpp
+	es31fNegativeSampleVariablesTests.hpp
+	es31fNegativeSampleVariablesTests.cpp
 	es31fNegativePreciseTests.cpp
 	es31fNegativePreciseTests.hpp
 	es31fNegativeAdvancedBlendEquationTests.cpp
@@ -181,6 +183,14 @@ set(DEQP_GLES31_FUNCTIONAL_SRCS
 	es31fNegativeShaderStorageTests.hpp
 	es31fNegativeSSBOBlockTests.cpp
 	es31fNegativeSSBOBlockTests.hpp
+	es31fDrawElementsBaseVertexTests.cpp
+	es31fDrawElementsBaseVertexTests.hpp
+	es31fNegativeComputeTests.cpp
+	es31fNegativeComputeTests.hpp
+	es31fShaderFramebufferFetchTests.cpp
+	es31fShaderFramebufferFetchTests.hpp
+	es31fNegativeShaderFramebufferFetchTests.cpp
+	es31fNegativeShaderFramebufferFetchTests.hpp
 	)
 
 add_library(deqp-gles31-functional STATIC ${DEQP_GLES31_FUNCTIONAL_SRCS})

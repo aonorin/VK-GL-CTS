@@ -89,6 +89,8 @@
 #include "es31fDrawBuffersIndexedTests.hpp"
 #include "es31fDefaultVertexArrayObjectTests.hpp"
 #include "es31fSRGBDecodeTests.hpp"
+#include "es31fDrawElementsBaseVertexTests.hpp"
+#include "es31fShaderFramebufferFetchTests.hpp"
 
 namespace deqp
 {
@@ -277,6 +279,8 @@ public:
 			};
 			addChild(new ShaderLibraryGroup(m_context, "uniform_block", "Uniform block tests", DE_LENGTH_OF_ARRAY(s_uniformBlockFiles), s_uniformBlockFiles));
 		}
+
+		addChild(new ShaderFramebufferFetchTests		(m_context));
 	}
 };
 
@@ -430,6 +434,7 @@ void FunctionalTests::init (void)
 	addChild(createDrawBuffersIndexedTests				(m_context));
 	addChild(new DefaultVertexArrayObjectTests			(m_context));
 	addChild(new SRGBTextureDecodeTests					(m_context));
+	addChild(new DrawElementsBaseVertexTests			(m_context));
 }
 
 } // Functional

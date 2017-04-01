@@ -32,7 +32,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "scripts"))
 from build.common import *
 
 EXTERNAL_DIR	= os.path.realpath(os.path.normpath(os.path.dirname(__file__)))
-SHA1 = "c07dea78a63893d7303b5acfe5085a8835e37f51"
+SHA1 = "2740c74841a794147aea63bb4fda551028c03259"
 
 PACKAGES = [
 	GitRepo(

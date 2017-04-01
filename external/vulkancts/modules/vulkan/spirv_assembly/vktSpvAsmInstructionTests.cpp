@@ -2773,10 +2773,18 @@ tcu::TestCaseGroup* createOpConstantNullGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
+		"%uvec2     = OpTypeVector %u32 2\n"
+		"%bvec3     = OpTypeVector %bool 3\n"
+		"%fvec4     = OpTypeVector %f32 4\n"
+		"%fmat33    = OpTypeMatrix %fvec3 3\n"
+		"%const100  = OpConstant %u32 100\n"
+		"%uarr100   = OpTypeArray %i32 %const100\n"
+		"%struct    = OpTypeStruct %f32 %i32 %u32\n"
+		"%pointer   = OpTypePointer Function %i32\n"
+		+ string(getComputeAsmInputOutputBuffer()) +
 
-		"${TYPE}\n"
-		"%null      = OpConstantNull %type\n"
+		"%null      = OpConstantNull ${TYPE}\n"
 
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
@@ -2793,18 +2801,17 @@ tcu::TestCaseGroup* createOpConstantNullGroup (tcu::TestContext& testCtx)
 		"             OpReturn\n"
 		"             OpFunctionEnd\n");
 
-	cases.push_back(CaseParameter("bool",			"%type = OpTypeBool"));
-	cases.push_back(CaseParameter("sint32",			"%type = OpTypeInt 32 1"));
-	cases.push_back(CaseParameter("uint32",			"%type = OpTypeInt 32 0"));
-	cases.push_back(CaseParameter("float32",		"%type = OpTypeFloat 32"));
-	cases.push_back(CaseParameter("vec4float32",	"%type = OpTypeVector %f32 4"));
-	cases.push_back(CaseParameter("vec3bool",		"%type = OpTypeVector %bool 3"));
-	cases.push_back(CaseParameter("vec2uint32",		"%type = OpTypeVector %u32 2"));
-	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %fvec3 3"));
-	cases.push_back(CaseParameter("array",			"%100 = OpConstant %u32 100\n"
-													"%type = OpTypeArray %i32 %100"));
-	cases.push_back(CaseParameter("struct",			"%type = OpTypeStruct %f32 %i32 %u32"));
-	cases.push_back(CaseParameter("pointer",		"%type = OpTypePointer Function %i32"));
+	cases.push_back(CaseParameter("bool",			"%bool"));
+	cases.push_back(CaseParameter("sint32",			"%i32"));
+	cases.push_back(CaseParameter("uint32",			"%u32"));
+	cases.push_back(CaseParameter("float32",		"%f32"));
+	cases.push_back(CaseParameter("vec4float32",	"%fvec4"));
+	cases.push_back(CaseParameter("vec3bool",		"%bvec3"));
+	cases.push_back(CaseParameter("vec2uint32",		"%uvec2"));
+	cases.push_back(CaseParameter("matrix",			"%fmat33"));
+	cases.push_back(CaseParameter("array",			"%uarr100"));
+	cases.push_back(CaseParameter("struct",			"%struct"));
+	cases.push_back(CaseParameter("pointer",		"%pointer"));
 
 	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
 
@@ -3861,17 +3868,25 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 
 		"OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) + string(getComputeAsmInputOutputBuffer()) +
-
-		"${TYPE}\n"
-
+		+ string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
+		"%uvec2     = OpTypeVector %u32 2\n"
+		"%fvec4     = OpTypeVector %f32 4\n"
+		"%fmat33    = OpTypeMatrix %fvec3 3\n"
+		"%image     = OpTypeImage %f32 2D 0 0 0 1 Unknown\n"
+		"%sampler   = OpTypeSampler\n"
+		"%simage    = OpTypeSampledImage %image\n"
+		"%const100  = OpConstant %u32 100\n"
+		"%uarr100   = OpTypeArray %i32 %const100\n"
+		"%struct    = OpTypeStruct %f32 %i32 %u32\n"
+		"%pointer   = OpTypePointer Function %i32\n"
+		+ string(getComputeAsmInputOutputBuffer()) +
 		"%id        = OpVariable %uvec3ptr Input\n"
 		"%zero      = OpConstant %i32 0\n"
 
 		"%main      = OpFunction %void None %voidf\n"
 		"%label     = OpLabel\n"
 
-		"%undef     = OpUndef %type\n"
+		"%undef     = OpUndef ${TYPE}\n"
 
 		"%idval     = OpLoad %uvec3 %id\n"
 		"%x         = OpCompositeExtract %u32 %idval 0\n"
@@ -3884,22 +3899,20 @@ tcu::TestCaseGroup* createOpUndefGroup (tcu::TestContext& testCtx)
 		"             OpReturn\n"
 		"             OpFunctionEnd\n");
 
-	cases.push_back(CaseParameter("bool",			"%type = OpTypeBool"));
-	cases.push_back(CaseParameter("sint32",			"%type = OpTypeInt 32 1"));
-	cases.push_back(CaseParameter("uint32",			"%type = OpTypeInt 32 0"));
-	cases.push_back(CaseParameter("float32",		"%type = OpTypeFloat 32"));
-	cases.push_back(CaseParameter("vec4float32",	"%type = OpTypeVector %f32 4"));
-	cases.push_back(CaseParameter("vec2uint32",		"%type = OpTypeVector %u32 2"));
-	cases.push_back(CaseParameter("matrix",			"%type = OpTypeMatrix %fvec3 3"));
-	cases.push_back(CaseParameter("image",			"%type = OpTypeImage %f32 2D 0 0 0 1 Unknown"));
-	cases.push_back(CaseParameter("sampler",		"%type = OpTypeSampler"));
-	cases.push_back(CaseParameter("sampledimage",	"%img = OpTypeImage %f32 2D 0 0 0 1 Unknown\n"
-													"%type = OpTypeSampledImage %img"));
-	cases.push_back(CaseParameter("array",			"%100 = OpConstant %u32 100\n"
-													"%type = OpTypeArray %i32 %100"));
-	cases.push_back(CaseParameter("runtimearray",	"%type = OpTypeRuntimeArray %f32"));
-	cases.push_back(CaseParameter("struct",			"%type = OpTypeStruct %f32 %i32 %u32"));
-	cases.push_back(CaseParameter("pointer",		"%type = OpTypePointer Function %i32"));
+	cases.push_back(CaseParameter("bool",			"%bool"));
+	cases.push_back(CaseParameter("sint32",			"%i32"));
+	cases.push_back(CaseParameter("uint32",			"%u32"));
+	cases.push_back(CaseParameter("float32",		"%f32"));
+	cases.push_back(CaseParameter("vec4float32",	"%fvec4"));
+	cases.push_back(CaseParameter("vec2uint32",		"%uvec2"));
+	cases.push_back(CaseParameter("matrix",			"%fmat33"));
+	cases.push_back(CaseParameter("image",			"%image"));
+	cases.push_back(CaseParameter("sampler",		"%sampler"));
+	cases.push_back(CaseParameter("sampledimage",	"%simage"));
+	cases.push_back(CaseParameter("array",			"%uarr100"));
+	cases.push_back(CaseParameter("runtimearray",	"%f32arr"));
+	cases.push_back(CaseParameter("struct",			"%struct"));
+	cases.push_back(CaseParameter("pointer",		"%pointer"));
 
 	fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
 
@@ -5215,29 +5228,29 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	getDefaultColors(defaultColors);
 
 	// First, simple cases that don't do anything with the OpUndef result.
-	fragments["testfun"] =
-		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
-		"%param1 = OpFunctionParameter %v4f32\n"
-		"%label_testfun = OpLabel\n"
-		"%undef = OpUndef %type\n"
-		"OpReturnValue %param1\n"
-		"OpFunctionEnd\n"
-		;
-	struct NameCodePair { string name, code; };
+	struct NameCodePair { string name, decl, type; };
 	const NameCodePair tests[] =
 	{
-		{"bool", "%type = OpTypeBool"},
-		{"vec2uint32", "%type = OpTypeVector %u32 2"},
-		{"image", "%type = OpTypeImage %f32 2D 0 0 0 1 Unknown"},
-		{"sampler", "%type = OpTypeSampler"},
-		{"sampledimage", "%img = OpTypeImage %f32 2D 0 0 0 1 Unknown\n" "%type = OpTypeSampledImage %img"},
-		{"pointer", "%type = OpTypePointer Function %i32"},
-		{"runtimearray", "%type = OpTypeRuntimeArray %f32"},
-		{"array", "%c_u32_100 = OpConstant %u32 100\n" "%type = OpTypeArray %i32 %c_u32_100"},
-		{"struct", "%type = OpTypeStruct %f32 %i32 %u32"}};
+		{"bool", "", "%bool"},
+		{"vec2uint32", "%type = OpTypeVector %u32 2", "%type"},
+		{"image", "%type = OpTypeImage %f32 2D 0 0 0 1 Unknown", "%type"},
+		{"sampler", "%type = OpTypeSampler", "%type"},
+		{"sampledimage", "%img = OpTypeImage %f32 2D 0 0 0 1 Unknown\n" "%type = OpTypeSampledImage %img", "%type"},
+		{"pointer", "", "%fp_i32"},
+		{"runtimearray", "%type = OpTypeRuntimeArray %f32", "%type"},
+		{"array", "%c_u32_100 = OpConstant %u32 100\n" "%type = OpTypeArray %i32 %c_u32_100", "%type"},
+		{"struct", "%type = OpTypeStruct %f32 %i32 %u32", "%type"}};
 	for (size_t testNdx = 0; testNdx < sizeof(tests) / sizeof(NameCodePair); ++testNdx)
 	{
-		fragments["pre_main"] = tests[testNdx].code;
+		fragments["undef_type"] = tests[testNdx].type;
+		fragments["testfun"] = StringTemplate(
+			"%test_code = OpFunction %v4f32 None %v4f32_function\n"
+			"%param1 = OpFunctionParameter %v4f32\n"
+			"%label_testfun = OpLabel\n"
+			"%undef = OpUndef ${undef_type}\n"
+			"OpReturnValue %param1\n"
+			"OpFunctionEnd\n").specialize(fragments);
+		fragments["pre_main"] = tests[testNdx].decl;
 		createTestsForAllStages(tests[testNdx].name, defaultColors, defaultColors, fragments, opUndefTests.get());
 	}
 	fragments.clear();
@@ -5320,7 +5333,6 @@ tcu::TestCaseGroup* createOpUndefTests(tcu::TestContext& testCtx)
 	createTestsForAllStages("vec4float32", defaultColors, defaultColors, fragments, opUndefTests.get());
 
 	fragments["pre_main"] =
-		"%v2f32 = OpTypeVector %f32 2\n"
 		"%m2x2f32 = OpTypeMatrix %v2f32 2\n";
 	fragments["testfun"] =
 		"%test_code = OpFunction %v4f32 None %v4f32_function\n"
@@ -5704,7 +5716,9 @@ tcu::TestCaseGroup* createModuleTests(tcu::TestContext& testCtx)
 
 	getDefaultColors(defaultColors);
 	getInvertedDefaultColors(invertedColors);
-	addFunctionCaseWithPrograms<InstanceContext>(moduleTests.get(), "same_module", "", createCombinedModule, runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
+	addFunctionCaseWithPrograms<InstanceContext>(
+			moduleTests.get(), "same_module", "", createCombinedModule, runAndVerifyDefaultPipeline,
+			createInstanceContext(combinedPipeline, map<string, string>()));
 
 	const char* numbers[] =
 	{
@@ -5728,11 +5742,15 @@ tcu::TestCaseGroup* createModuleTests(tcu::TestContext& testCtx)
 		// If there are an odd number, the color should be flipped.
 		if ((permutation.vertexPermutation + permutation.geometryPermutation + permutation.tesscPermutation + permutation.tessePermutation + permutation.fragmentPermutation) % 2 == 0)
 		{
-			addFunctionCaseWithPrograms<InstanceContext>(moduleTests.get(), name, "", createMultipleEntries, runAndVerifyDefaultPipeline, createInstanceContext(pipeline, defaultColors, defaultColors, map<string, string>()));
+			addFunctionCaseWithPrograms<InstanceContext>(
+					moduleTests.get(), name, "", createMultipleEntries, runAndVerifyDefaultPipeline,
+					createInstanceContext(pipeline, defaultColors, defaultColors, map<string, string>()));
 		}
 		else
 		{
-			addFunctionCaseWithPrograms<InstanceContext>(moduleTests.get(), name, "", createMultipleEntries, runAndVerifyDefaultPipeline, createInstanceContext(pipeline, defaultColors, invertedColors, map<string, string>()));
+			addFunctionCaseWithPrograms<InstanceContext>(
+					moduleTests.get(), name, "", createMultipleEntries, runAndVerifyDefaultPipeline,
+					createInstanceContext(pipeline, defaultColors, invertedColors, map<string, string>()));
 		}
 	}
 	return moduleTests.release();
@@ -6637,25 +6655,17 @@ tcu::TestCaseGroup* createUConvertTests (tcu::TestContext& testCtx)
 	return group.release();
 }
 
-enum NumberType
-{
-	TYPE_INT,
-	TYPE_UINT,
-	TYPE_FLOAT,
-	TYPE_END,
-};
-
 const string getNumberTypeName (const NumberType type)
 {
-	if (type == TYPE_INT)
+	if (type == NUMBERTYPE_INT32)
 	{
 		return "int";
 	}
-	else if (type == TYPE_UINT)
+	else if (type == NUMBERTYPE_UINT32)
 	{
 		return "uint";
 	}
-	else if (type == TYPE_FLOAT)
+	else if (type == NUMBERTYPE_FLOAT32)
 	{
 		return "float";
 	}
@@ -6683,15 +6693,15 @@ const string repeatString (const string& str, int times)
 
 const string getRandomConstantString (const NumberType type, de::Random& rnd)
 {
-	if (type == TYPE_INT)
+	if (type == NUMBERTYPE_INT32)
 	{
 		return numberToString<deInt32>(getInt(rnd));
 	}
-	else if (type == TYPE_UINT)
+	else if (type == NUMBERTYPE_UINT32)
 	{
 		return numberToString<deUint32>(rnd.getUint32());
 	}
-	else if (type == TYPE_FLOAT)
+	else if (type == NUMBERTYPE_FLOAT32)
 	{
 		return numberToString<float>(rnd.getFloat());
 	}
@@ -6802,7 +6812,7 @@ void createCompositeCases (vector<map<string, string> >& testCases, de::Random& 
 	createArrayCompositeCases(testCases, rnd, type);
 	createStructCompositeCases(testCases, rnd, type);
 	// Matrix only supports float types
-	if (type == TYPE_FLOAT)
+	if (type == NUMBERTYPE_FLOAT32)
 	{
 		createMatrixCompositeCases(testCases, rnd, type);
 	}
@@ -6812,9 +6822,9 @@ const string getAssemblyTypeDeclaration (const NumberType type)
 {
 	switch (type)
 	{
-		case TYPE_INT:		return "OpTypeInt 32 1";
-		case TYPE_UINT:		return "OpTypeInt 32 0";
-		case TYPE_FLOAT:	return "OpTypeFloat 32";
+		case NUMBERTYPE_INT32:		return "OpTypeInt 32 1";
+		case NUMBERTYPE_UINT32:		return "OpTypeInt 32 0";
+		case NUMBERTYPE_FLOAT32:	return "OpTypeFloat 32";
 		default:			DE_ASSERT(false); return "";
 	}
 }
@@ -6909,7 +6919,7 @@ tcu::TestCaseGroup* createOpCompositeInsertGroup (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "opcompositeinsert", "Test the OpCompositeInsert instruction"));
 	de::Random						rnd		(deStringHash(group->getName()));
 
-	for (int type = TYPE_INT; type != TYPE_END; ++type)
+	for (int type = NUMBERTYPE_INT32; type != NUMBERTYPE_END32; ++type)
 	{
 		NumberType						numberType		= NumberType(type);
 		const string					typeName		= getNumberTypeName(numberType);
@@ -6927,21 +6937,21 @@ tcu::TestCaseGroup* createOpCompositeInsertGroup (tcu::TestContext& testCtx)
 
 			switch (numberType)
 			{
-				case TYPE_INT:
+				case NUMBERTYPE_INT32:
 				{
 					deInt32 number = getInt(rnd);
 					spec.inputs.push_back(createCompositeBuffer<deInt32>(number));
 					spec.outputs.push_back(createCompositeBuffer<deInt32>(number));
 					break;
 				}
-				case TYPE_UINT:
+				case NUMBERTYPE_UINT32:
 				{
 					deUint32 number = rnd.getUint32();
 					spec.inputs.push_back(createCompositeBuffer<deUint32>(number));
 					spec.outputs.push_back(createCompositeBuffer<deUint32>(number));
 					break;
 				}
-				case TYPE_FLOAT:
+				case NUMBERTYPE_FLOAT32:
 				{
 					float number = rnd.getFloat();
 					spec.inputs.push_back(createCompositeBuffer<float>(number));
@@ -7087,7 +7097,7 @@ tcu::TestCaseGroup* createOpInBoundsAccessChainGroup (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	group			(new tcu::TestCaseGroup(testCtx, "opinboundsaccesschain", "Test the OpInBoundsAccessChain instruction"));
 	de::Random						rnd				(deStringHash(group->getName()));
 
-	for (int type = TYPE_INT; type != TYPE_END; ++type)
+	for (int type = NUMBERTYPE_INT32; type != NUMBERTYPE_END32; ++type)
 	{
 		NumberType						numberType	= NumberType(type);
 		const string					typeName	= getNumberTypeName(numberType);
@@ -7111,21 +7121,21 @@ tcu::TestCaseGroup* createOpInBoundsAccessChainGroup (tcu::TestContext& testCtx)
 
 			switch (numberType)
 			{
-				case TYPE_INT:
+				case NUMBERTYPE_INT32:
 				{
 					deInt32 number = getInt(rnd);
 					spec.inputs.push_back(createCompositeBuffer<deInt32>(number));
 					spec.outputs.push_back(createCompositeBuffer<deInt32>(number));
 					break;
 				}
-				case TYPE_UINT:
+				case NUMBERTYPE_UINT32:
 				{
 					deUint32 number = rnd.getUint32();
 					spec.inputs.push_back(createCompositeBuffer<deUint32>(number));
 					spec.outputs.push_back(createCompositeBuffer<deUint32>(number));
 					break;
 				}
-				case TYPE_FLOAT:
+				case NUMBERTYPE_FLOAT32:
 				{
 					float number = rnd.getFloat();
 					spec.inputs.push_back(createCompositeBuffer<float>(number));
@@ -7267,7 +7277,7 @@ tcu::TestCaseGroup* createShaderDefaultOutputGroup (tcu::TestContext& testCtx)
 	de::MovePtr<tcu::TestCaseGroup>	group	(new tcu::TestCaseGroup(testCtx, "shader_default_output", "Test shader default output."));
 	de::Random						rnd		(deStringHash(group->getName()));
 
-	for (int type = TYPE_INT; type != TYPE_END; ++type)
+	for (int type = NUMBERTYPE_INT32; type != NUMBERTYPE_END32; ++type)
 	{
 		NumberType						numberType	= NumberType(type);
 		const string					typeName	= getNumberTypeName(numberType);
@@ -7284,7 +7294,7 @@ tcu::TestCaseGroup* createShaderDefaultOutputGroup (tcu::TestContext& testCtx)
 
 			switch (numberType)
 			{
-				case TYPE_INT:
+				case NUMBERTYPE_INT32:
 				{
 					deInt32 number = getInt(rnd);
 					spec.inputs.push_back(createCompositeBuffer<deInt32>(number));
@@ -7292,7 +7302,7 @@ tcu::TestCaseGroup* createShaderDefaultOutputGroup (tcu::TestContext& testCtx)
 					params["constValue"] = numberToString(number);
 					break;
 				}
-				case TYPE_UINT:
+				case NUMBERTYPE_UINT32:
 				{
 					deUint32 number = rnd.getUint32();
 					spec.inputs.push_back(createCompositeBuffer<deUint32>(number));
@@ -7300,7 +7310,7 @@ tcu::TestCaseGroup* createShaderDefaultOutputGroup (tcu::TestContext& testCtx)
 					params["constValue"] = numberToString(number);
 					break;
 				}
-				case TYPE_FLOAT:
+				case NUMBERTYPE_FLOAT32:
 				{
 					float number = rnd.getFloat();
 					spec.inputs.push_back(createCompositeBuffer<float>(number));

@@ -157,6 +157,10 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolStatisticsTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolTests.cpp \
 	external/vulkancts/modules/vulkan/rasterization/vktRasterizationTests.cpp \
+	external/vulkancts/modules/vulkan/robustness/vktRobustnessBufferAccessTests.cpp \
+	external/vulkancts/modules/vulkan/robustness/vktRobustnessTests.cpp \
+	external/vulkancts/modules/vulkan/robustness/vktRobustnessUtil.cpp \
+	external/vulkancts/modules/vulkan/robustness/vktRobustnessVertexAccessTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktOpaqueTypeIndexingTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderBuiltinPrecisionTests.cpp \
 	external/vulkancts/modules/vulkan/shaderexecutor/vktShaderBuiltinTests.cpp \
@@ -248,6 +252,7 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/vktTestPackage.cpp \
 	external/vulkancts/modules/vulkan/vktTestPackageEntry.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiDisplayTimingTests.cpp \
+	external/vulkancts/modules/vulkan/wsi/vktWsiIncrementalPresentTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSurfaceTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiSwapchainTests.cpp \
 	external/vulkancts/modules/vulkan/wsi/vktWsiTests.cpp \
@@ -296,6 +301,7 @@ LOCAL_SRC_FILES := \
 	framework/common/tcuThreadUtil.cpp \
 	framework/delibs/debase/deDefs.c \
 	framework/delibs/debase/deFloat16.c \
+	framework/delibs/debase/deFloat16Test.c \
 	framework/delibs/debase/deInt32.c \
 	framework/delibs/debase/deInt32Test.c \
 	framework/delibs/debase/deMath.c \
@@ -785,6 +791,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fDebugTests.cpp \
 	modules/gles31/functional/es31fDefaultVertexArrayObjectTests.cpp \
 	modules/gles31/functional/es31fDrawBuffersIndexedTests.cpp \
+	modules/gles31/functional/es31fDrawElementsBaseVertexTests.cpp \
 	modules/gles31/functional/es31fDrawTests.cpp \
 	modules/gles31/functional/es31fFboColorbufferTests.cpp \
 	modules/gles31/functional/es31fFboNoAttachmentTests.cpp \
@@ -804,11 +811,14 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fNegativeAdvancedBlendEquationTests.cpp \
 	modules/gles31/functional/es31fNegativeAtomicCounterTests.cpp \
 	modules/gles31/functional/es31fNegativeBufferApiTests.cpp \
+	modules/gles31/functional/es31fNegativeComputeTests.cpp \
 	modules/gles31/functional/es31fNegativeFragmentApiTests.cpp \
 	modules/gles31/functional/es31fNegativePreciseTests.cpp \
 	modules/gles31/functional/es31fNegativeSSBOBlockTests.cpp \
+	modules/gles31/functional/es31fNegativeSampleVariablesTests.cpp \
 	modules/gles31/functional/es31fNegativeShaderApiTests.cpp \
 	modules/gles31/functional/es31fNegativeShaderDirectiveTests.cpp \
+	modules/gles31/functional/es31fNegativeShaderFramebufferFetchTests.cpp \
 	modules/gles31/functional/es31fNegativeShaderFunctionTests.cpp \
 	modules/gles31/functional/es31fNegativeShaderImageLoadStoreTests.cpp \
 	modules/gles31/functional/es31fNegativeShaderStorageTests.cpp \
@@ -837,6 +847,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fShaderAtomicOpTests.cpp \
 	modules/gles31/functional/es31fShaderBuiltinConstantTests.cpp \
 	modules/gles31/functional/es31fShaderCommonFunctionTests.cpp \
+	modules/gles31/functional/es31fShaderFramebufferFetchTests.cpp \
 	modules/gles31/functional/es31fShaderHelperInvocationTests.cpp \
 	modules/gles31/functional/es31fShaderImageLoadStoreTests.cpp \
 	modules/gles31/functional/es31fShaderIntegerFunctionTests.cpp \
@@ -937,6 +948,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/pipeline \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/query_pool \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/rasterization \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/robustness \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/shaderexecutor \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/shaderrender \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/sparse_resources \
