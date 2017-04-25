@@ -36,6 +36,7 @@
 #include "gl4cGPUShaderFP64Tests.hpp"
 #include "gl4cGetTextureSubImageTests.hpp"
 #include "gl4cIncompleteTextureAccessTests.hpp"
+#include "gl4cIndirectParametersTests.hpp"
 #include "gl4cKHRDebugTests.hpp"
 #include "gl4cMapBufferAlignmentTests.hpp"
 #include "gl4cMultiBindTests.hpp"
@@ -43,6 +44,7 @@
 #include "gl4cPostDepthCoverageTests.hpp"
 #include "gl4cProgramInterfaceQueryTests.hpp"
 #include "gl4cRobustnessTests.hpp"
+#include "gl4cShaderAtomicCounterOpsTests.hpp"
 #include "gl4cShaderAtomicCountersTests.hpp"
 #include "gl4cShaderImageLoadStoreTests.hpp"
 #include "gl4cShaderImageSizeTests.hpp"
@@ -228,6 +230,7 @@ void GL43TestPackage::init(void)
 		addChild(new gl4cts::StencilTexturingTests(getContext()));
 		addChild(new gl4cts::SparseBufferTests(getContext()));
 		addChild(new gl4cts::SparseTextureTests(getContext()));
+		addChild(new gl4cts::IndirectParametersTests(getContext()));
 	}
 	catch (...)
 	{
@@ -333,6 +336,7 @@ void GL45TestPackage::init(void)
 		addChild(new gl4cts::SparseTexture2Tests(getContext()));
 		addChild(new gl4cts::SparseTextureClampTests(getContext()));
 		addChild(new gl4cts::TextureFilterMinmax(getContext()));
+		addChild(new gl4cts::ShaderAtomicCounterOps(getContext()));
 	}
 	catch (...)
 	{

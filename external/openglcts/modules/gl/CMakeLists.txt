@@ -70,6 +70,8 @@ set(GLCTS_GL_SRCS
 	gl4cGPUShaderFP64Tests.hpp
 	gl4cIncompleteTextureAccessTests.cpp
 	gl4cIncompleteTextureAccessTests.hpp
+	gl4cShaderAtomicCounterOpsTests.cpp
+	gl4cShaderAtomicCounterOpsTests.hpp
 	gl4cShaderStorageBufferObjectTests.cpp
 	gl4cShaderStorageBufferObjectTests.hpp
 	gl4cShaderSubroutineTests.cpp
@@ -112,6 +114,8 @@ set(GLCTS_GL_SRCS
 	gl4cParallelShaderCompileTests.hpp
 	gl4cPostDepthCoverageTests.cpp
 	gl4cPostDepthCoverageTests.hpp
+	gl4cIndirectParametersTests.cpp
+	gl4cIndirectParametersTests.hpp
 	)
 
 set(GLCTS_GL_LIBS

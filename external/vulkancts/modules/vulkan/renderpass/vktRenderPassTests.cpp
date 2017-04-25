@@ -23,6 +23,9 @@
 
 #include "vktRenderPassTests.hpp"
 
+#include "vktRenderPassMultisampleTests.hpp"
+#include "vktRenderPassMultisampleResolveTests.hpp"
+
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 
@@ -5670,6 +5673,9 @@ tcu::TestCaseGroup* createRenderPassTests (tcu::TestContext& testCtx)
 	addTestGroup(renderpassTests.get(), "formats", "Tests for different image formats.", addFormatTests);
 	addTestGroup(renderpassTests.get(), "attachment", "Attachment format and count tests with load and store ops and image layouts", addAttachmentTests);
 	addTestGroup(renderpassTests.get(), "attachment_allocation", "Attachment allocation tests", addAttachmentAllocationTests);
+
+	renderpassTests->addChild(createRenderPassMultisampleTests(testCtx));
+	renderpassTests->addChild(createRenderPassMultisampleResolveTests(testCtx));
 
 	return renderpassTests.release();
 }

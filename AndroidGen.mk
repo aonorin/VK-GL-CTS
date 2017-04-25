@@ -157,6 +157,9 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolStatisticsTests.cpp \
 	external/vulkancts/modules/vulkan/query_pool/vktQueryPoolTests.cpp \
 	external/vulkancts/modules/vulkan/rasterization/vktRasterizationTests.cpp \
+	external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultisampleResolveTests.cpp \
+	external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultisampleTests.cpp \
+	external/vulkancts/modules/vulkan/renderpass/vktRenderPassTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessBufferAccessTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessTests.cpp \
 	external/vulkancts/modules/vulkan/robustness/vktRobustnessUtil.cpp \
@@ -244,7 +247,6 @@ LOCAL_SRC_FILES := \
 	external/vulkancts/modules/vulkan/ubo/vktUniformBlockTests.cpp \
 	external/vulkancts/modules/vulkan/vktDrawUtil.cpp \
 	external/vulkancts/modules/vulkan/vktInfoTests.cpp \
-	external/vulkancts/modules/vulkan/vktRenderPassTests.cpp \
 	external/vulkancts/modules/vulkan/vktShaderLibrary.cpp \
 	external/vulkancts/modules/vulkan/vktTestCase.cpp \
 	external/vulkancts/modules/vulkan/vktTestCaseUtil.cpp \
@@ -795,6 +797,7 @@ LOCAL_SRC_FILES := \
 	modules/gles31/functional/es31fDrawTests.cpp \
 	modules/gles31/functional/es31fFboColorbufferTests.cpp \
 	modules/gles31/functional/es31fFboNoAttachmentTests.cpp \
+	modules/gles31/functional/es31fFboSRGBWriteControlTests.cpp \
 	modules/gles31/functional/es31fFboTestCase.cpp \
 	modules/gles31/functional/es31fFboTestUtil.cpp \
 	modules/gles31/functional/es31fFramebufferDefaultStateQueryTests.cpp \
@@ -948,6 +951,7 @@ LOCAL_C_INCLUDES := \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/pipeline \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/query_pool \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/rasterization \
+	$(deqp_dir)/external/vulkancts/modules/vulkan/renderpass \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/robustness \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/shaderexecutor \
 	$(deqp_dir)/external/vulkancts/modules/vulkan/shaderrender \
